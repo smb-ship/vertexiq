@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
 import KpiCard from "../ui/KpiCard";
 import RevenueChart from "./RevenueChart";
+import TeamPerformance from "./TeamPerformance";
 import AiSummaryPanel from "./AiSummaryPanel";
 import AiRecommendations from "./AiRecommendations";
 import { useMockLoading } from "../../hooks/useMockLoading";
 import { kpis } from "../../lib/mockKpis";
+import RecentAlerts from "./RecentAlerts";
 
 
 const containerVariants = {
@@ -40,26 +42,27 @@ export default function DashboardPage() {
         ))}
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
-        <motion.div
-          variants={itemVariants}
-          initial="hidden"
-          animate="show"
-          transition={{ delay: 0.3 }}
-          className="lg:col-span-2"
-        >
-          <RevenueChart />
-        </motion.div>
+      <motion.div
+  variants={itemVariants}
+  initial="hidden"
+  animate="show"
+  transition={{ delay: 0.3 }}
+  className="lg:col-span-2 space-y-6"
+>
+  <RevenueChart />
+  <TeamPerformance />
+</motion.div>
 
         <motion.div
-          variants={itemVariants}
-          initial="hidden"
-          animate="show"
-          transition={{ delay: 0.35 }}
-        >
-          <AiSummaryPanel kpis={kpis} />
-        </motion.div>
-      </div>
+  variants={itemVariants}
+  initial="hidden"
+  animate="show"
+  transition={{ delay: 0.35 }}
+  className="space-y-6"
+>
+  <AiSummaryPanel kpis={kpis} />
+  <RecentAlerts />
+</motion.div>
 
       <motion.div
         variants={itemVariants}

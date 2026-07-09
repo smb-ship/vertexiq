@@ -3,7 +3,6 @@ import AiSummaryPanel from "./AiSummaryPanel";
 import AiRecommendations from "./AiRecommendations";
 import { kpis } from "../../lib/mockKpis";
 
-
 export default function InsightsPage() {
   return (
     <motion.div

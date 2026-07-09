@@ -7,6 +7,25 @@ import ExportButton from "../ui/ExportButton";
 import Skeleton from "../ui/Skeleton";
 import { fetchTrafficData } from "../../services/dataService";
 
+interface TooltipPayload {
+  active?: boolean;
+  payload?: { value: number }[];
+  label?: string;
+}
+
+function CustomTooltip({ active, payload, label }: TooltipPayload) {
+  if (!active || !payload || payload.length === 0) return null;
+
+  return (
+    <div className="glass-card rounded-xl px-4 py-3 border border-border-subtle">
+      <p className="text-xs text-text-muted mb-1">{label}</p>
+      <p className="text-sm font-semibold text-text-primary">
+        {payload[0].value.toLocaleString()} visits
+      </p>
+    </div>
+  );
+}
+
 export default function AnalyticsPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["traffic-data"],
@@ -30,15 +49,15 @@ export default function AnalyticsPage() {
       </div>
 
       <Card className="mt-6">
-        <div className="mb-4">
-          <h3 className="text-sm font-semibold text-text-primary">Traffic by Source</h3>
-          <p className="text-xs text-text-muted mt-0.5">This month</p>
+        <div className="mb-6">
+          <h3 className="text-base font-semibold text-text-primary">Traffic by Source</h3>
+          <p className="text-sm text-text-muted mt-0.5">This month</p>
         </div>
 
         {isLoading && <Skeleton className="h-[300px] w-full" />}
 
         {isError && (
-          <div className="flex items-center gap-2 text-sm text-rose-600 h-[300px] justify-center">
+          <div className="flex items-center gap-2 text-sm text-danger h-[300px] justify-center">
             <AlertCircle size={14} />
             Couldn't load traffic data.
           </div>
@@ -47,18 +66,24 @@ export default function AnalyticsPage() {
         {data && (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#00000008" vertical={false} />
-              <XAxis dataKey="source" tick={{ fontSize: 12, fill: "#6B7280" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: "#6B7280" }} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{
-                  borderRadius: "12px",
-                  border: "1px solid rgba(0,0,0,0.05)",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                  fontSize: "13px",
-                }}
+              <defs>
+                <linearGradient id="trafficBar" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#60A5FA" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.6} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <XAxis dataKey="source" tick={{ fontSize: 12, fill: "#94A3B8" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: "#94A3B8" }} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(59,130,246,0.06)" }} />
+              <Bar
+                dataKey="visits"
+                fill="url(#trafficBar)"
+                radius={[6, 6, 0, 0]}
+                isAnimationActive={true}
+                animationDuration={900}
+                animationEasing="ease-out"
               />
-              <Bar dataKey="visits" fill="#8B5CF6" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}

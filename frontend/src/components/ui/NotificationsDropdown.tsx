@@ -28,22 +28,22 @@ export default function NotificationsDropdown() {
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="relative p-2 rounded-lg hover:bg-black/5 transition-colors"
+        className="relative p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-white/[0.05] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
-        <Bell size={18} className="text-text-muted" />
+        <Bell size={18} />
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-accent-pink" />
+          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary glow-primary" />
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl border border-black/5 shadow-lg overflow-hidden z-20">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-black/5">
+        <div className="absolute right-0 mt-2 w-80 glass-card rounded-xl overflow-hidden z-20">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
             <span className="text-sm font-semibold text-text-primary">Notifications</span>
             {unreadCount > 0 && (
               <button
                 onClick={markAllRead}
-                className="text-xs text-accent-purple hover:underline"
+                className="text-xs text-primary hover:text-primary/80 transition-colors"
               >
                 Mark all read
               </button>
@@ -59,8 +59,8 @@ export default function NotificationsDropdown() {
               notifications.map((n) => (
                 <div
                   key={n.id}
-                  className={`px-4 py-3 border-b border-black/5 last:border-0 ${
-                    n.unread ? "bg-accent-purple/5" : ""
+                  className={`px-4 py-3 border-b border-border-subtle last:border-0 transition-colors ${
+                    n.unread ? "bg-primary/[0.06]" : "hover:bg-white/[0.02]"
                   }`}
                 >
                   <p className="text-sm text-text-primary leading-relaxed">{n.message}</p>
