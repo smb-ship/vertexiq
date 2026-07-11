@@ -12,7 +12,7 @@ import RecentAlerts from "./RecentAlerts";
 import KpiModal from "./KpiModal";
 import KpiDrilldownModal from "./KpiDrilldownModal";
 import { useAuth } from "../../lib/AuthContext";
-import { fetchKpis, createKpi, updateKpi, deleteKpi, KpiFromApi } from "../../services/dataService";
+import { fetchKpis, createKpi, updateKpi, KpiFromApi } from "../../services/dataService";
 import { iconMap } from "../../lib/iconMap";
 
 const containerVariants = {
@@ -50,11 +50,6 @@ export default function DashboardPage() {
   const updateMutation = useMutation({
     mutationFn: (input: { label: string; value: string; change: number; icon: string }) =>
       updateKpi(editingKpi!.id, input, token!),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["kpis"] }),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => deleteKpi(id, token!),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["kpis"] }),
   });
 
