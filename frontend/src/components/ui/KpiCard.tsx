@@ -11,13 +11,26 @@ interface KpiCardProps {
   isLoading?: boolean;
 }
 
-export default function KpiCard({ label, value, change, icon: Icon, trend, isLoading }: KpiCardProps) {
+interface KpiCardProps {
+  label: string;
+  value: string;
+  change: number;
+  icon: LucideIcon;
+  trend: number[];
+  isLoading?: boolean;
+  onClick?: () => void;
+}
+
+export default function KpiCard({ label, value, change, icon: Icon, trend, isLoading, onClick }: KpiCardProps) {
   const isPositive = change >= 0;
   const trendData = trend.map((v, i) => ({ i, v }));
 
   if (isLoading) {
     return (
-      <div className="glass-card rounded-2xl p-5 flex flex-col gap-3">
+      <div
+  onClick={onClick}
+  className={`glass-card rounded-2xl p-5 flex flex-col gap-3 transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(59,130,246,0.15)] ${onClick ? "cursor-pointer" : ""}`}
+>
         <div className="flex items-center justify-between">
           <Skeleton className="h-9 w-9 rounded-xl" />
           <Skeleton className="h-5 w-14 rounded-full" />

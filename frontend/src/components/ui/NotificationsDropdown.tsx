@@ -1,28 +1,45 @@
 import { useState } from "react";
 import { Bell } from "lucide-react";
-
-interface Notification {
-  id: number;
-  message: string;
-  time: string;
-  unread: boolean;
-}
-
-const mockNotifications: Notification[] = [
-  { id: 1, message: "Revenue report for June is ready to view.", time: "2h ago", unread: true },
-  { id: 2, message: "New user signup spike detected — 42 today.", time: "5h ago", unread: true },
-  { id: 3, message: "Weekly AI summary has been generated.", time: "1d ago", unread: false },
-];
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../../lib/AuthContext";
+import { fetchNotifications, markNotificationRead, markAllNotificationsRead } from "../../services/dataService";
 
 export default function NotificationsDropdown() {
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const { token } = useAuth();
+  const queryClient = useQueryClient();
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  
+  const { data: notifications } = useQuery({
+  queryKey: ["notifications"],
+  queryFn: () => fetchNotifications(token),
+  enabled: !!token,
+  staleTime: 60 * 1000,
+  refetchInterval: 30 * 1000,
+});
 
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
-  };
+  const markReadMutation = useMutation({
+  mutationFn: (id: number) => markNotificationRead(id, token!),
+  onMutate: async (id: number) => {
+    await queryClient.cancelQueries({ queryKey: ["notifications"] });
+    const previous = queryClient.getQueryData(["notifications"]);
+    queryClient.setQueryData(["notifications"], (old: any) =>
+      old?.map((n: any) => (n.id === id ? { ...n, unread: false } : n))
+    );
+    return { previous };
+  },
+  onError: (_err, _id, context) => {
+    if (context?.previous) queryClient.setQueryData(["notifications"], context.previous);
+  },
+  onSettled: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+});
+
+  const markAllReadMutation = useMutation({
+    mutationFn: () => markAllNotificationsRead(token!),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+
+  const unreadCount = (notifications ?? []).filter((n) => n.unread).length;
 
   return (
     <div className="relative">
@@ -42,7 +59,7 @@ export default function NotificationsDropdown() {
             <span className="text-sm font-semibold text-text-primary">Notifications</span>
             {unreadCount > 0 && (
               <button
-                onClick={markAllRead}
+                onClick={() => markAllReadMutation.mutate()}
                 className="text-xs text-primary hover:text-primary/80 transition-colors"
               >
                 Mark all read
@@ -51,21 +68,22 @@ export default function NotificationsDropdown() {
           </div>
 
           <div className="max-h-72 overflow-y-auto">
-            {notifications.length === 0 ? (
+            {!notifications || notifications.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <p className="text-sm text-text-muted">You're all caught up 🎉</p>
               </div>
             ) : (
               notifications.map((n) => (
-                <div
+                <button
                   key={n.id}
-                  className={`px-4 py-3 border-b border-border-subtle last:border-0 transition-colors ${
-                    n.unread ? "bg-primary/[0.06]" : "hover:bg-white/[0.02]"
+                  onClick={() => n.unread && markReadMutation.mutate(n.id)}
+                  className={`w-full text-left px-4 py-3 border-b border-border-subtle last:border-0 transition-colors ${
+                    n.unread ? "bg-primary/[0.06] hover:bg-primary/[0.09]" : "hover:bg-white/[0.02]"
                   }`}
                 >
                   <p className="text-sm text-text-primary leading-relaxed">{n.message}</p>
-                  <p className="text-xs text-text-muted mt-1">{n.time}</p>
-                </div>
+                  <p className="text-xs text-text-muted mt-1">{new Date(n.time).toLocaleString()}</p>
+                </button>
               ))
             )}
           </div>

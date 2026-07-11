@@ -4,7 +4,7 @@ import Card from "../ui/Card";
 import { useAuth } from "../../lib/AuthContext";
 
 export default function SettingsPage() {
-  const { role } = useAuth();
+  const { user } = useAuth();
 
   return (
     <motion.div
@@ -24,18 +24,18 @@ export default function SettingsPage() {
 
           <div className="flex items-center gap-4 mb-4">
             <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center text-white text-lg font-semibold">
-              M
+              {user?.name?.[0] ?? "?"}
             </div>
             <div>
-              <p className="text-sm font-medium text-text-primary">Mal</p>
-              <p className="text-xs text-text-muted">mal@vertexiq.com</p>
+              <p className="text-sm font-medium text-text-primary">{user?.name}</p>
+              <p className="text-xs text-text-muted">{user?.email}</p>
             </div>
           </div>
 
           <div className="flex items-center justify-between py-2 border-t border-border-subtle">
             <span className="text-sm text-text-muted">Role</span>
             <span className="text-sm font-medium text-primary px-2 py-0.5 rounded-md bg-primary/10">
-              {role}
+              {user?.role}
             </span>
           </div>
         </Card>

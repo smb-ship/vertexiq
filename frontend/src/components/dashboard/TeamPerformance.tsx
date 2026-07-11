@@ -15,11 +15,17 @@ function statusFromMemberStatus(status: TeamMemberData["status"]): {
 }
 
 export default function TeamPerformance() {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["team-data"],
-    queryFn: fetchTeamData,
-    staleTime: 5 * 60 * 1000,
-  });
+  const token = localStorage.getItem("token");
+
+  const {
+  data,
+  isLoading,
+  isError,
+} = useQuery({
+  queryKey: ["team-data"],
+  queryFn: () => fetchTeamData(token),
+  staleTime: 5 * 60 * 1000,
+});
 
   return (
     <div className="glass-card rounded-2xl p-6">

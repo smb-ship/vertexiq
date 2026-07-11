@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
+import AskVertexIQ from "../dashboard/AskVertexIQ";
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -16,6 +17,7 @@ export default function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+        <AskVertexIQ />
     </div>
   );
 }

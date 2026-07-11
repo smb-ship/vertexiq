@@ -1,16 +1,22 @@
-import { Search, Menu, Plus } from "lucide-react";
-import { useAuth, Role } from "../../lib/AuthContext";
-import NotificationsDropdown from "../ui/NotificationsDropdown";
+import { useNavigate } from "react-router-dom";
+import { Search, Menu, Plus, LogOut } from "lucide-react";
 import Button from "../ui/Button";
 import Input from "../ui/Input";
-import Select from "../ui/Select"
+import { useAuth } from "../../lib/AuthContext";
+import NotificationsDropdown from "../ui/NotificationsDropdown";
 
 interface NavbarProps {
   onMenuClick: () => void;
 }
 
 export default function Navbar({ onMenuClick }: NavbarProps) {
-  const { role, setRole } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <header className="h-16 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-10 glass-card rounded-none border-x-0 border-t-0">
@@ -29,31 +35,24 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* TEMPORARY: role switcher for testing role-based access — remove once real auth exists */}
-        <Select
-          value={role}
-          onChange={(e) => setRole(e.target.value as Role)}
-          className="hidden sm:block text-xs"
-        >
-
-         <option value="Admin">Admin</option>
-         <option value="Manager">Manager</option>
-         <option value="Analyst">Analyst</option>
-        </Select>
-
-        <Button
-          variant="primary"
-          className="hidden sm:flex"
-          onClick={() => window.print()}
-        >
-         <Plus size={15} />
-         Quick Action
-       </Button>
+        <Button variant="primary" className="hidden sm:flex" onClick={() => window.print()}>
+          <Plus size={15} />
+          Quick Action
+        </Button>
 
         <NotificationsDropdown />
 
-        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-semibold shrink-0">
-          M
+        <div className="flex items-center gap-1.5">
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-semibold shrink-0">
+            {user?.name?.[0] ?? "?"}
+          </div>
+          <button
+            onClick={handleLogout}
+            title="Log out"
+            className="p-2 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </div>
     </header>
