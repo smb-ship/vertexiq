@@ -566,5 +566,11 @@ def me():
 
     return jsonify(user.to_dict())
 
+@app.route("/api/temp-seed-vertexiq-2026", methods=["GET"])
+def temp_seed():
+    from seed import run_seed
+    run_seed()
+    return jsonify({"message": "Database seeded successfully"})
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
