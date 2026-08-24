@@ -30,8 +30,13 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 GROQ_MODEL = "openai/gpt-oss-120b"
 
 
+from werkzeug.exceptions import HTTPException
+
 @app.errorhandler(Exception)
 def handle_uncaught_exception(e):
+    if isinstance(e, HTTPException):
+        return e
+
     logger.exception("Unhandled exception on %s %s", request.method, request.path)
     return jsonify({"error": "Internal server error", "detail": str(e)}), 500
 
