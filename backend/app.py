@@ -1,14 +1,18 @@
 import os
+import json
+import logging
+from datetime import timedelta
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from groq import Groq
 from dotenv import load_dotenv
-from models import db, RevenuePoint, TrafficSource, TeamMember, Notification, Kpi
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, get_jwt
 from models import db, RevenuePoint, TrafficSource, TeamMember, Notification, Kpi, User
-
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, get_jwt
 
 load_dotenv()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("vertexiq")
 
 app = Flask(__name__)
 CORS(app)
@@ -16,10 +20,20 @@ CORS(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///vertexiq.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
+
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret-change-in-production")
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=24)
 jwt = JWTManager(app)
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+GROQ_MODEL = "openai/gpt-oss-120b"
+
+
+@app.errorhandler(Exception)
+def handle_uncaught_exception(e):
+    logger.exception("Unhandled exception on %s %s", request.method, request.path)
+    return jsonify({"error": "Internal server error", "detail": str(e)}), 500
 
 
 @app.route("/api/health", methods=["GET"])
@@ -44,7 +58,7 @@ def ai_summary():
 Keep it under 60 words. Be direct and specific, not generic."""
 
     completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model=GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=150,
     )
@@ -53,7 +67,6 @@ Keep it under 60 words. Be direct and specific, not generic."""
 
     return jsonify({"summary": summary})
 
-import json
 
 @app.route("/api/ai/recommendations", methods=["POST"])
 def ai_recommendations():
@@ -73,7 +86,7 @@ Respond ONLY with a JSON array of 3 strings, nothing else. No markdown, no pream
 ["First recommendation.", "Second recommendation.", "Third recommendation."]"""
 
     completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model=GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=300,
     )
@@ -86,6 +99,7 @@ Respond ONLY with a JSON array of 3 strings, nothing else. No markdown, no pream
         recommendations = [raw]
 
     return jsonify({"recommendations": recommendations})
+
 
 @app.route("/api/ai/trends", methods=["GET"])
 @jwt_required()
@@ -100,7 +114,7 @@ def ai_trends():
 Respond ONLY with a JSON object with these exact keys: "trend" (one short sentence describing the trend), "direction" ("up", "down", or "flat"), "confidence" ("high", "medium", or "low"). No markdown, no preamble."""
 
     completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model=GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=150,
     )
@@ -130,7 +144,7 @@ def ai_anomalies():
 Respond ONLY with a JSON array of up to 3 anomalies, each an object with keys "title" (short label) and "description" (one sentence explaining what's unusual and why it matters). If nothing unusual stands out, return an empty array. No markdown, no preamble."""
 
     completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model=GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=400,
     )
@@ -142,6 +156,7 @@ Respond ONLY with a JSON array of up to 3 anomalies, each an object with keys "t
         result = []
 
     return jsonify({"anomalies": result})
+
 
 @app.route("/api/ai/ask", methods=["POST"])
 @jwt_required()
@@ -170,7 +185,7 @@ DASHBOARD DATA:
 QUESTION: {question}"""
 
     completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model=GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=200,
     )
@@ -178,6 +193,7 @@ QUESTION: {question}"""
     answer = completion.choices[0].message.content
 
     return jsonify({"answer": answer})
+
 
 @app.route("/api/ai/report", methods=["GET"])
 @jwt_required()
@@ -197,7 +213,7 @@ def ai_executive_report():
 {context}"""
 
     completion = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
+        model=GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=500,
     )
@@ -218,7 +234,7 @@ def ai_forecast():
 Respond ONLY with a JSON array of exactly 3 objects, each with keys "month" (short label like "Aug") and "projected_revenue" (integer, no dollar sign). Base your forecast on the trend in the data. No markdown, no preamble."""
 
     completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model=GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=200,
     )
@@ -231,10 +247,12 @@ Respond ONLY with a JSON array of exactly 3 objects, each with keys "month" (sho
 
     return jsonify({"forecast": forecast})
 
+
 @app.route("/api/dashboard/revenue", methods=["GET"])
 def dashboard_revenue():
     points = RevenuePoint.query.all()
     return jsonify([p.to_dict() for p in points])
+
 
 @app.route("/api/dashboard/revenue", methods=["POST"])
 @jwt_required()
@@ -292,6 +310,7 @@ def delete_revenue_point(point_id):
     db.session.commit()
     return jsonify({"message": "Revenue record deleted"}), 200
 
+
 @app.route("/api/analytics/traffic", methods=["GET"])
 def analytics_traffic():
     sources = TrafficSource.query.all()
@@ -303,6 +322,7 @@ def analytics_traffic():
 def team_members():
     members = TeamMember.query.all()
     return jsonify([m.to_dict() for m in members])
+
 
 @app.route("/api/team", methods=["POST"])
 @jwt_required()
@@ -410,6 +430,14 @@ def get_notifications():
     notifications = Notification.query.order_by(Notification.created_at.desc()).all()
     return jsonify([n.to_dict() for n in notifications])
 
+
+@app.route("/api/notifications/<int:notif_id>", methods=["PUT"])
+@jwt_required()
+def update_notification(notif_id):
+    notification = Notification.query.get(notif_id)
+    if not notification:
+        return jsonify({"error": "Notification not found"}), 404
+
     data = request.get_json()
     if "unread" in data:
         notification.unread = data["unread"]
@@ -441,6 +469,7 @@ def delete_notification(notif_id):
     db.session.commit()
     return jsonify({"message": "Notification deleted"}), 200
 
+
 @app.route("/api/kpis", methods=["GET"])
 @jwt_required()
 def get_kpis():
@@ -450,6 +479,7 @@ def get_kpis():
 
     kpis = Kpi.query.all()
     return jsonify([k.to_dict() for k in kpis])
+
 
 @app.route("/api/kpis", methods=["POST"])
 @jwt_required()
@@ -514,6 +544,7 @@ def delete_kpi(kpi_id):
     db.session.commit()
     return jsonify({"message": "KPI deleted"}), 200
 
+
 @app.route("/api/auth/register", methods=["POST"])
 def register():
     data = request.get_json()
@@ -548,9 +579,9 @@ def login():
         return jsonify({"error": "Invalid email or password"}), 401
 
     access_token = create_access_token(
-    identity=str(user.id),
-    additional_claims={"role": user.role, "name": user.name, "email": user.email},
-)
+        identity=str(user.id),
+        additional_claims={"role": user.role, "name": user.name, "email": user.email},
+    )
 
     return jsonify({"access_token": access_token, "user": user.to_dict()})
 
@@ -566,11 +597,13 @@ def me():
 
     return jsonify(user.to_dict())
 
+
 @app.route("/api/temp-seed-vertexiq-2026", methods=["GET"])
 def temp_seed():
     from seed import run_seed
     run_seed()
     return jsonify({"message": "Database seeded successfully"})
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
